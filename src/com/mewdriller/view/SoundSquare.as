@@ -3,7 +3,13 @@
 	import com.mewdriller.control.Controller;
 	import com.mewdriller.control.event.DynamicEvent;
 	import com.mewdriller.GameOfLivingSound;
-	import com.mewdriller.sound.Tone;
+	import com.mewdriller.sound.ToneManager;
+	import com.noteflight.standingwave2.elements.AudioDescriptor;
+	import com.noteflight.standingwave2.elements.IAudioSource;
+	import com.noteflight.standingwave2.filters.EnvelopeFilter;
+	import com.noteflight.standingwave2.output.AudioPlayer;
+	import com.noteflight.standingwave2.sources.SineSource;
+	import com.noteflight.standingwave2.utils.AudioUtils;
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.events.MouseEvent;
@@ -31,6 +37,8 @@
 		public static const SIZE:Number = 20;
 		
 		private var _controller:Controller = Controller.getInstance();
+		private var _toneMgr:ToneManager = ToneManager.getInstance();
+		
 		private var _isOn:Boolean = false;
 		private var _isInAddMode:Boolean = false;
 		private var _activeTimeout:uint;
@@ -38,7 +46,23 @@
 		public var row:int = 0;
 		public var col:int = 0;
 		
-		private var noteNumbers:Array = [50, 52, 54, 56, 58, 60, 62, 64, 66, 68, 70, 72, 74, 76, 78, 80];
+		public function get isOn():Boolean { return _isOn; }
+		
+		public function set isOn(value:Boolean):void 
+		{
+			_isOn = value;
+			
+			if (_isOn) 
+			{
+				turnOn();
+				_controller.addEventListener(Controller.PLAY_COLUMN, onPlayColumn, false, 0, true);
+			}
+			else 
+			{
+				turnOff();
+				_controller.removeEventListener(Controller.PLAY_COLUMN, onPlayColumn);
+			}
+		}
 		
 		public function SoundSquare(row:int, col:int) 
 		{
@@ -104,24 +128,12 @@
 			{
 				turnActive();
 				
-				//TODO: Composite all the tones into one sound so that the frame plays through correctly.
-				var timeDelay:Timer = new Timer(Math.abs((row * -20) - 200));
-				timeDelay.start();
-				timeDelay.addEventListener(TimerEvent.TIMER, onPlayDelay);
-			}	
-
-			
-				function onPlayDelay(e:Event):void
-				{
-				timeDelay.stop();	
-				new Tone(noteNumbers[noteNumbers.length - 1 - row], .2, 8, 2.5, 2.5, 5, 5).start();
-				}
-			
-		
+				// TODO: Composite all the tones into one sound so that the frame plays through correctly.
+				// Reference StandingWave's example to see if they're during this.
+				
+				new AudioPlayer(8192).play(_toneMgr.getToneByRow(row));
+			}
 		}
-		
-	
-		
 		
 		private function turnOn():void 
 		{
@@ -135,6 +147,8 @@
 		
 		private function turnActive():void 
 		{
+			// TODO: Redo active to have a glow that comes on/off during the notes playback.
+			
 			graphics.clear();
 			graphics.beginFill(0x0000FF);
 			graphics.drawRect(1, 1, SIZE - 2, SIZE - 2);
@@ -151,24 +165,6 @@
 			graphics.endFill();
 			
 			clearTimeout(_activeTimeout);
-		}
-		
-		public function get isOn():Boolean { return _isOn; }
-		
-		public function set isOn(value:Boolean):void 
-		{
-			_isOn = value;
-			
-			if (_isOn) 
-			{
-				turnOn();
-				_controller.addEventListener(Controller.PLAY_COLUMN, onPlayColumn, false, 0, true);
-			}
-			else 
-			{
-				turnOff();
-				_controller.removeEventListener(Controller.PLAY_COLUMN, onPlayColumn);
-			}
 		}
 	}
 }
